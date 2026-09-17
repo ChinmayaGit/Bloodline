@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TOUGH // IMPACT - 2.5D Fighting Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/ui/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- 3D WebGL Canvas Container -->
+    <div id="canvas-container"></div>
+    <div id="fps-counter" class="fps-counter hidden">60 FPS</div>
+
+    <!-- Arcade HUD Overlay (Visible during match) -->
+    <div id="hud" class="hud-layer hidden">
+      <!-- Quick Settings HUD Button -->
+      <button id="btn-hud-settings" class="hud-icon-btn" title="Settings">⚙️</button>
+
+      <!-- Top Bar: Health, Names, Timer, Rounds -->
+      <!-- Top Bar: Health, Names, Timer, Rounds, Portraits -->
+      <div class="top-bar">
+        <!-- Player 1 Status (HIRO) -->
+        <div class="fighter-hud p1-hud">
+          <div class="portrait-badge p1-badge">
+            <div id="p1-portrait-img" class="portrait-img char-hiro"></div>
+          </div>
+          <div class="fighter-stats-wrap">
+            <div class="fighter-header">
+              <span id="p1-name" class="fighter-name">HIRO</span>
+              <span id="p1-hp-val" class="hp-numeric">1000</span>
+              <div class="round-markers" id="p1-rounds">
+                <span class="round-dot"></span>
+                <span class="round-dot"></span>
+              </div>
+            </div>
+            <div class="health-bar-container">
+              <div class="health-bar-bg">
+                <div id="p1-health-damage" class="health-damage-bar"></div>
+                <div id="p1-health" class="health-bar-fill"></div>
+              </div>
+            </div>
+            <!-- Super Meter P1 -->
+            <div class="meter-bar-container">
+              <span class="meter-label">EX METER</span>
+              <div class="meter-bar-bg">
+                <div id="p1-meter" class="meter-bar-fill"></div>
+              </div>
+              <span id="p1-meter-val" class="meter-val">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center Match Timer -->
+        <div class="timer-container">
+          <div id="match-timer" class="match-timer">99</div>
+          <div id="horde-stats" class="horde-stats hidden">
+            <span id="horde-wave" class="horde-wave">WAVE 1</span>
+            <span id="horde-kills" class="horde-kills">0 KILLS</span>
+          </div>
+        </div>
+
+        <!-- Player 2 Status (ROXY) -->
+        <div class="fighter-hud p2-hud">
+          <div class="fighter-stats-wrap">
+            <div class="fighter-header">
+              <div class="round-markers" id="p2-rounds">
+                <span class="round-dot"></span>
+                <span class="round-dot"></span>
+              </div>
+              <span id="p2-hp-val" class="hp-numeric">1000</span>
+              <span id="p2-name" class="fighter-name">ROXY</span>
+            </div>
+            <div class="health-bar-container">
+              <div class="health-bar-bg">
+                <div id="p2-health-damage" class="health-damage-bar"></div>
+                <div id="p2-health" class="health-bar-fill"></div>
+              </div>
+            </div>
+            <!-- Super Meter P2 -->
+            <div class="meter-bar-container">
+              <span id="p2-meter-val" class="meter-val">0%</span>
+              <div class="meter-bar-bg">
+                <div id="p2-meter" class="meter-bar-fill"></div>
+              </div>
+              <span class="meter-label">EX METER</span>
+            </div>
+          </div>
+          <div class="portrait-badge p2-badge">
+            <div id="p2-portrait-img" class="portrait-img char-roxy"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Announcer / Banners -->
+      <div id="announcer-banner" class="announcer-banner hidden">
+        <h1 id="announcer-text">ROUND 1</h1>
+      </div>
+
+      <!-- Dynamic Combo Feedback -->
+      <div id="p1-combo-display" class="combo-display p1-combo hidden">
+        <span class="combo-count">0</span>
+        <span class="combo-text">HITS</span>
+      </div>
+      <div id="p2-combo-display" class="combo-display p2-combo hidden">
+        <span class="combo-count">0</span>
+        <span class="combo-text">HITS</span>
+      </div>
+
+      <!-- Training Mode Info Overlay -->
+      <div id="training-overlay" class="training-overlay hidden">
+        <div class="training-panel">
+          <div class="training-header" id="training-header-toggle" title="Click to Minimize / Expand">
+            <span>🥋 TRAINING DOJO</span>
+            <button id="btn-toggle-training" class="training-collapse-btn" title="Toggle Training Panel">▲</button>
+          </div>
+          <div id="training-body" class="training-body">
+            <div class="training-row">
+              <label><input type="checkbox" id="toggle-hitboxes"> Show Hitboxes</label>
+              <label><input type="checkbox" id="toggle-frame-data" checked> Frame Data</label>
+            </div>
+            <div class="training-row">
+              <span>Dummy AI:</span>
+              <select id="dummy-action-select">
+                <option value="stand">Stand</option>
+                <option value="crouch">Crouch</option>
+                <option value="jump">Jump Repeatedly</option>
+                <option value="block_all">Guard All</option>
+                <option value="cpu">Active CPU</option>
+              </select>
+            </div>
+            <div id="frame-data-display" class="frame-data-box">
+              <div>Startup: <span id="fd-startup">-</span> | Active: <span id="fd-active">-</span> | Recovery: <span id="fd-recovery">-</span></div>
+              <div>Advantage: <span id="fd-adv">-</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- On-Screen Combat Move Controls Dock -->
+      <div id="combat-controls" class="combat-controls">
+        <!-- Movement D-Pad Cluster (Left) -->
+        <div class="controls-cluster dpad-cluster">
+          <div class="cluster-title">MOVE</div>
+          <div class="dpad-box">
+            <button class="t-btn dpad-btn d-up" data-key="KeyW" title="Jump (W)">
+              <span class="btn-symbol">▲</span>
+              <span class="btn-sub">W</span>
+            </button>
+            <div class="d-middle">
+              <button class="t-btn dpad-btn d-left" data-key="KeyA" title="Left / Guard (A)">
+                <span class="btn-symbol">◄</span>
+                <span class="btn-sub">A</span>
+              </button>
+              <button class="t-btn dpad-btn d-down" data-key="KeyS" title="Crouch / Low Guard (S)">
+                <span class="btn-symbol">▼</span>
+                <span class="btn-sub">S</span>
+              </button>
+              <button class="t-btn dpad-btn d-right" data-key="KeyD" title="Right / Advance (D)">
+                <span class="btn-symbol">►</span>
+                <span class="btn-sub">D</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center Toggle / Collapse Handle -->
+        <div class="controls-dock-center">
+          <button id="btn-toggle-controls-dock" class="dock-toggle-btn" title="Toggle On-Screen Move Buttons">
+            <span class="dock-toggle-icon">🎮</span>
+            <span id="dock-toggle-text" class="dock-toggle-label">MOVES</span>
+          </button>
+        </div>
+
+        <!-- Combat Move Action Buttons Cluster (Right) -->
+        <div class="controls-cluster actions-cluster">
+          <div class="cluster-title">COMBAT MOVES</div>
+          <div class="combat-grid">
+            <!-- Row 1: Punches & Surge -->
+            <div class="combat-row">
+              <button class="t-btn combat-btn btn-punch" data-key="KeyJ" title="Light Punch (J)">
+                <span class="btn-name">PUNCH</span>
+                <span class="btn-sub">LP [J]</span>
+              </button>
+              <button class="t-btn combat-btn btn-heavy" data-key="KeyK" title="Heavy Punch (K)">
+                <span class="btn-name">HEAVY</span>
+                <span class="btn-sub">HP [K]</span>
+              </button>
+              <button class="t-btn combat-btn btn-sp1" data-key="KeyO" title="Special 1: Fireball / Surge (O)">
+                <span class="btn-name">SURGE</span>
+                <span class="btn-sub">SP1 [O]</span>
+              </button>
+            </div>
+
+            <!-- Row 2: Kicks & Blade -->
+            <div class="combat-row">
+              <button class="t-btn combat-btn btn-kick" data-key="KeyU" title="Light Kick (U)">
+                <span class="btn-name">KICK</span>
+                <span class="btn-sub">LK [U]</span>
+              </button>
+              <button class="t-btn combat-btn btn-tornado" data-key="KeyI" title="540 Tornado Kick (I)">
+                <span class="btn-name">540 KICK</span>
+                <span class="btn-sub">HK [I]</span>
+              </button>
+              <button class="t-btn combat-btn btn-sp2" data-key="KeyL" title="Special 2: Dragon Strike / Flash Blade (L)">
+                <span class="btn-name">SLASH</span>
+                <span class="btn-sub">SP2 [L]</span>
+              </button>
+            </div>
+
+            <!-- Row 3: Super Ultra Finisher -->
+            <div class="combat-row ultra-row">
+              <button class="t-btn combat-btn btn-ultra" data-key="Space" title="Super Move (Space - Requires 100% EX)">
+                <span class="btn-name">⚡ SUPER ULTRA MOVE ⚡</span>
+                <span class="btn-sub">[SPACE] (EX 100%)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menus Overlay -->
+    <div id="menu-container" class="menu-layer">
+      <!-- Title Screen -->
+      <div id="title-screen" class="menu-screen active">
+        <div class="title-logo">
+          <span class="title-sub">2.5D LOW-POLY FIGHT // DRIFT PHONK EDITION</span>
+          <h1 class="title-main">POLY<span class="title-accent">//IMPACT</span></h1>
+          <div class="title-divider"></div>
+        </div>
+        <div class="menu-options">
+          <button id="btn-arcade" class="menu-btn primary"><span class="btn-glow"></span>VS CPU (ARCADE 1v1)</button>
+          <button id="btn-horde" class="menu-btn highlight"><span class="btn-glow"></span>🔥 HORDE SURVIVAL (1 VS MANY)</button>
+          <button id="btn-pvp" class="menu-btn"><span class="btn-glow"></span>LOCAL 2-PLAYER (PvP)</button>
+          <button id="btn-training" class="menu-btn"><span class="btn-glow"></span>TRAINING DOJO</button>
+          <button id="btn-settings" class="menu-btn"><span class="btn-glow"></span>⚙️ SETTINGS</button>
+          <button id="btn-how-to-play" class="menu-btn secondary"><span class="btn-glow"></span>CONTROLS & MOVES</button>
+        </div>
+        <div class="sound-toggle-bar">
+          <button id="btn-sound-toggle" class="icon-btn">🔊 Sound: ON</button>
+        </div>
+      </div>
+
+      <!-- Character Select Screen -->
+      <div id="char-select-screen" class="menu-screen">
+        <h2 class="screen-title">SELECT YOUR FIGHTER</h2>
+        <div class="char-select-layout">
+          <!-- Hiro Select Panel -->
+          <div class="char-card" id="card-blaze" data-char="blaze">
+            <div class="char-tag">MARTIAL ARTS STRIKER</div>
+            <h3 class="char-card-name">HIRO</h3>
+            <div class="char-stats">
+              <div class="stat-bar"><span class="stat-name">POWER</span><div class="stat-fill" style="width: 85%;"></div></div>
+              <div class="stat-bar"><span class="stat-name">SPEED</span><div class="stat-fill" style="width: 85%;"></div></div>
+              <div class="stat-bar"><span class="stat-name">RANGE</span><div class="stat-fill" style="width: 75%;"></div></div>
+            </div>
+            <p class="char-desc">Anime martial artist in an orange kung-fu vest, red headband, and yellow combat shoes. Dominates with Wing Chun chain punches, 540 tornado kicks, and flying jump strikes.</p>
+            <button class="select-btn" data-char="blaze">SELECT HIRO</button>
+          </div>
+
+          <!-- Roxy Select Panel -->
+          <div class="char-card" id="card-cypher" data-char="cypher">
+            <div class="char-tag">STREET BRAWLER</div>
+            <h3 class="char-card-name">ROXY</h3>
+            <div class="char-stats">
+              <div class="stat-bar"><span class="stat-name">POWER</span><div class="stat-fill" style="width: 80%;"></div></div>
+              <div class="stat-bar"><span class="stat-name">SPEED</span><div class="stat-fill" style="width: 95%;"></div></div>
+              <div class="stat-bar"><span class="stat-name">RANGE</span><div class="stat-fill" style="width: 85%;"></div></div>
+            </div>
+            <p class="char-desc">Stylized anime street brawler in a yellow tank top, dark open vest, brawler cap, and baggy red sweatpants. Slices with instant flash blade dashes and cyan ground aura.</p>
+            <button class="select-btn" data-char="cypher">SELECT ROXY</button>
+          </div>
+
+          <!-- Shadow Select Panel -->
+          <div class="char-card" id="card-shadow" data-char="shadow">
+            <div class="char-tag">THE PHANTOM NINJA</div>
+            <h3 class="char-card-name">SHADOW</h3>
+            <div class="char-stats">
+              <div class="stat-bar"><span class="stat-name">POWER</span><div class="stat-fill" style="width: 80%;"></div></div>
+              <div class="stat-bar"><span class="stat-name">SPEED</span><div class="stat-fill" style="width: 100%;"></div></div>
+              <div class="stat-bar"><span class="stat-name">RANGE</span><div class="stat-fill" style="width: 70%;"></div></div>
+            </div>
+            <p class="char-desc">Faceted low-poly obsidian phantom ninja with glowing crimson slit visor, trailing scarf, and dual phantom daggers. Vanishes with instant blink slices and supersonic shurikens.</p>
+            <button class="select-btn" data-char="shadow">SELECT SHADOW</button>
+          </div>
+
+          <!-- Volt Select Panel -->
+          <div class="char-card" id="card-volt" data-char="volt">
+            <div class="char-tag">THE THUNDER BRAWLER</div>
+            <h3 class="char-card-name">VOLT</h3>
+            <div class="char-stats">
+              <div class="stat-bar"><span class="stat-name">POWER</span><div class="stat-fill" style="width: 95%;"></div></div>
+              <div class="stat-bar"><span class="stat-name">SPEED</span><div class="stat-fill" style="width: 85%;"></div></div>
+              <div class="stat-bar"><span class="stat-name">RANGE</span><div class="stat-fill" style="width: 80%;"></div></div>
+            </div>
+            <p class="char-desc">Faceted low-poly electric gold brawler with spiked lightning crown and power gauntlets. Smashes opponents with thunder palm beams, divekicks, and a 1000-fist overdrive rush.</p>
+            <button class="select-btn" data-char="volt">SELECT VOLT</button>
+          </div>
+
+          <!-- Jin Select Panel -->
+          <div class="char-card" id="card-jin" data-char="jin">
+            <div class="char-tag">HOODED GRANDMASTER</div>
+            <h3 class="char-card-name">JIN</h3>
+            <div class="char-stats">
+              <div class="stat-bar"><span class="stat-name">POWER</span><div class="stat-fill" style="width: 90%;"></div></div>
+              <div class="stat-bar"><span class="stat-name">SPEED</span><div class="stat-fill" style="width: 85%;"></div></div>
+              <div class="stat-bar"><span class="stat-name">RANGE</span><div class="stat-fill" style="width: 85%;"></div></div>
+            </div>
+            <p class="char-desc">Low-poly martial arts master in a pointed white hood, sleeveless open V-neck karate gi, black obi belt, and banded leg wraps. Dominates with flowing ki blasts, rising dragon kicks, and iron palm strikes.</p>
+            <button class="select-btn" data-char="jin">SELECT JIN</button>
+          </div>
+        </div>
+
+        <div class="char-select-footer">
+          <div id="selection-status">Player 1: Select Fighter</div>
+          <button id="btn-char-back" class="menu-btn secondary">BACK</button>
+        </div>
+      </div>
+
+      <!-- Controls & Move List Modal -->
+      <div id="controls-modal" class="menu-modal hidden">
+        <div class="modal-content">
+          <h2 class="modal-title">COMMAND LIST & CONTROLS</h2>
+          
+          <div class="controls-grid">
+            <div class="control-column">
+              <h3>PLAYER 1 (Default)</h3>
+              <ul class="control-list">
+                <li><span class="key">A</span> / <span class="key">D</span> : Move (Double tap to Dash)</li>
+                <li><span class="key">W</span> : Jump</li>
+                <li><span class="key">S</span> : Crouch / Low Guard</li>
+                <li><span class="key">J</span> : Light Punch (LP)</li>
+                <li><span class="key">K</span> : Heavy Punch (HP)</li>
+                <li><span class="key">U</span> : Light Kick (LK)</li>
+                <li><span class="key">I</span> : Heavy Kick (HK)</li>
+                <li><span class="key">O</span> : Special 1 (Fireball / Surge / Shuriken / Lightning)</li>
+                <li><span class="key">L</span> : Special 2 (Dragon Ascent / Flash Blade / Shadow Step / Divekick)</li>
+                <li><span class="key">SPACE</span> : SUPER MOVE (Requires 100% EX)</li>
+              </ul>
+            </div>
+
+            <div class="control-column">
+              <h3>PLAYER 2 (Local PvP)</h3>
+              <ul class="control-list">
+                <li><span class="key">◄</span> / <span class="key">►</span> : Move (Double tap to Dash)</li>
+                <li><span class="key">▲</span> : Jump</li>
+                <li><span class="key">▼</span> : Crouch / Low Guard</li>
+                <li><span class="key">Numpad 1</span> : Light Punch</li>
+                <li><span class="key">Numpad 2</span> : Heavy Punch</li>
+                <li><span class="key">Numpad 4</span> : Light Kick</li>
+                <li><span class="key">Numpad 5</span> : Heavy Kick</li>
+                <li><span class="key">Numpad 6</span> : Special 1</li>
+                <li><span class="key">Numpad 3</span> : Special 2</li>
+                <li><span class="key">Enter</span> : SUPER MOVE</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="combat-rules-section">
+            <h3>FIGHTING MECHANICS</h3>
+            <p><strong>Blocking:</strong> Hold Back (<span class="key">A</span> when facing right) to high-block. Hold Down-Back (<span class="key">S</span>+<span class="key">A</span>) to crouch-block sweeps!</p>
+            <p><strong>Gatling Combos & Cancels:</strong> Chain Light ➔ Heavy ➔ Special ➔ Super on hit or block for ultra-fast, seamless combos!</p>
+            <p><strong>Gamepads:</strong> Full Gamepad support! Plug in Xbox/PlayStation controllers at any time.</p>
+          </div>
+
+          <button id="btn-close-controls" class="menu-btn primary">CLOSE</button>
+        </div>
+      </div>
+
+      <!-- Match End / Rematch Screen -->
+      <div id="gameover-modal" class="menu-modal hidden">
+        <div class="modal-content victory-content">
+          <h1 id="winner-text" class="victory-title">WHITE WINS!</h1>
+          <p id="winner-sub" class="victory-sub">MATCH CONCLUDED</p>
+          <div class="victory-actions">
+            <button id="btn-rematch" class="menu-btn primary"><span class="btn-glow"></span>REMATCH</button>
+            <button id="btn-char-select-again" class="menu-btn"><span class="btn-glow"></span>CHANGE FIGHTER</button>
+            <button id="btn-main-menu" class="menu-btn secondary"><span class="btn-glow"></span>MAIN MENU</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pause Menu -->
+      <div id="pause-modal" class="menu-modal hidden">
+        <div class="modal-content">
+          <h2 class="modal-title">GAME PAUSED</h2>
+          <div class="pause-actions">
+            <button id="btn-resume" class="menu-btn primary">RESUME FIGHT</button>
+            <button id="btn-pause-settings" class="menu-btn">⚙️ SETTINGS</button>
+            <button id="btn-pause-moves" class="menu-btn">COMMAND LIST</button>
+            <button id="btn-quit-match" class="menu-btn secondary">QUIT TO TITLE</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Modal -->
+      <div id="settings-modal" class="menu-modal hidden">
+        <div class="modal-content settings-content">
+          <h2 class="modal-title">⚙️ GAME SETTINGS</h2>
+          
+          <div class="settings-grid">
+            <!-- Audio Section -->
+            <div class="settings-group">
+              <h3 class="group-title">🔊 AUDIO & SOUNDTRACK</h3>
+              
+              <div class="setting-row">
+                <div class="setting-text">
+                  <span class="setting-title">Master Volume</span>
+                  <span id="label-master-vol" class="setting-val">80%</span>
+                </div>
+                <input type="range" id="setting-master-vol" min="0" max="100" value="80" class="custom-slider" />
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-text">
+                  <span class="setting-title">808 Drift Phonk BGM</span>
+                  <span id="label-bgm-vol" class="setting-val">60%</span>
+                </div>
+                <input type="range" id="setting-bgm-vol" min="0" max="100" value="60" class="custom-slider" />
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-text">
+                  <span class="setting-title">Combat SFX</span>
+                  <span id="label-sfx-vol" class="setting-val">85%</span>
+                </div>
+                <input type="range" id="setting-sfx-vol" min="0" max="100" value="85" class="custom-slider" />
+              </div>
+
+              <div class="setting-toggle-row">
+                <span class="setting-title">Mute All Audio</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="setting-mute-toggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Controls & Display Section -->
+            <div class="settings-group">
+              <h3 class="group-title">🎮 CONTROLS & VISUALS</h3>
+
+              <div class="setting-toggle-row">
+                <div>
+                  <div class="setting-title">On-Screen Combat Move Buttons</div>
+                  <div class="setting-desc">Clickable / touch move buttons on screen</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="setting-combat-buttons" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-toggle-row">
+                <div>
+                  <div class="setting-title">Screen Shake / Trauma</div>
+                  <div class="setting-desc">Tactile camera shake on heavy impact</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="setting-shake-toggle" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-toggle-row">
+                <div>
+                  <div class="setting-title">Atmospheric Dust Motes</div>
+                  <div class="setting-desc">Floating cinematic particles in spotlight</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="setting-dust-toggle" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-toggle-row">
+                <div>
+                  <div class="setting-title">FPS Performance Monitor</div>
+                  <div class="setting-desc">Display live frame rate counter</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="setting-fps-toggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-actions">
+            <button id="btn-close-settings" class="menu-btn primary"><span class="btn-glow"></span>SAVE & CLOSE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
+
